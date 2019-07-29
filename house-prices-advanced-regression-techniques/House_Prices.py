@@ -33,8 +33,9 @@ def parse_data():
 
 
 def build_net(input_, is_training = True):
-    out = tf.layers.dense(inputs = input_, units = 100)
-    out = tf.layers.dropout(inputs = out, rate = 0.5, training = is_training)
+    out = tf.layers.dense(inputs = input_, units = 1)
+    return out
+    # out = tf.layers.dropout(inputs = out, rate = 0.5, training = is_training)
     # out = tf.layers.dense(inputs = out, units = 100)
     # out = tf.layers.dense(inputs = out, units = 10)
     out = tf.layers.dense(inputs = out, units = 1)
@@ -62,11 +63,11 @@ def build_model():
         # total_loss = tf.losses.get_total_loss(name='total_loss')
         # global_step = tf.Variable(0, trainable=False)
         global_step = tf.train.get_or_create_global_step()
-        starter_learning_rate = 0.1
+        starter_learning_rate = 5.0
         learning_rate = tf.train.exponential_decay(
             starter_learning_rate,
             global_step,
-            decay_steps = 1000 ,
+            decay_steps = 10000 ,
             decay_rate = 0.96,
             staircase=True)
         opt = tf.train.GradientDescentOptimizer(learning_rate)
@@ -77,15 +78,22 @@ def build_model():
             total_loss = RMSE,
             optimizer = opt)
 
-    return g, train_tensor
+    return g, train_tensor, RMSE, global_step
 
 
 def train_model():
     """Trains simple model."""
-    g, train_tensor = build_model()
+    g, train_tensor, total_loss, global_step = build_model()
     with g.as_default():
+        init = tf.global_variables_initializer()
         # Actually runs training.
-        slim.learning.train(train_tensor, train_log_dir)
+        # slim.learning.train(train_tensor, train_log_dir)
+        with tf.Session() as sess:
+            sess.run(init)
+            while True:
+                [unused_arg, loss, step] = sess.run([train_tensor, total_loss, global_step])
+                print('current step: ', step, ' current loss', loss)
+
 
 
 def main(unused_arg):
